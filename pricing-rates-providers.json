@@ -1,0 +1,34 @@
+{
+  "effectiveDate": "2025-01-01",
+  "currency": "USD",
+  "rates": {
+    "github": {
+      "actions_minutes": 0.008,
+      "actions_minutes_windows": 0.016,
+      "actions_minutes_macos": 0.08,
+      "storage_gb": 0.008,
+      "packages_storage_gb": 0.25
+    },
+    "aws": {
+      "ec2_t3_micro_hour": 0.0104,
+      "ec2_t3_small_hour": 0.0208,
+      "ec2_t3_medium_hour": 0.0416,
+      "s3_storage_gb": 0.023,
+      "s3_requests_put_1000": 0.005,
+      "s3_requests_get_1000": 0.0004,
+      "lambda_gb_second": 0.0000166667,
+      "lambda_requests_million": 0.20,
+      "rds_db_t3_micro_hour": 0.017,
+      "cloudfront_data_transfer_gb": 0.085
+    },
+    "cloudflare": {
+      "requests_million": 0.50,
+      "bandwidth_gb": 0.01,
+      "workers_requests_million": 0.50,
+      "workers_cpu_ms": 0.02,
+      "kv_reads_million": 0.50,
+      "kv_writes_million": 5.00,
+      "kv_storage_gb": 0.50
+    }
+  }
+}

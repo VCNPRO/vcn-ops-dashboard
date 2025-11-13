@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ingestAllVercelApps } from '@/lib/ingest-vercel';
+import { ingestGitHubActions } from '@/lib/ingest-github';
+import { ingestAWSCosts } from '@/lib/ingest-aws';
+import { ingestCloudflareAnalytics } from '@/lib/ingest-cloudflare';
 
 /**
  * Ingest usage data from multiple providers and calculate costs
@@ -69,6 +72,12 @@ export async function POST(request: Request) {
           case 'github':
             result = await ingestGitHub();
             break;
+          case 'aws':
+            result = await ingestAWS();
+            break;
+          case 'cloudflare':
+            result = await ingestCloudflare();
+            break;
           default:
             results.errors.push({
               target,
@@ -131,19 +140,21 @@ async function ingestTwilio() {
  * Ingest GitHub usage data
  */
 async function ingestGitHub() {
-  const provider = await prisma.provider.findFirst({
-    where: { type: 'github' },
-  });
+  const org = process.env.GITHUB_ORG;
+  return await ingestGitHubActions(org);
+}
 
-  if (!provider) {
-    throw new Error('GitHub provider not found in database');
-  }
+/**
+ * Ingest AWS costs data
+ */
+async function ingestAWS() {
+  return await ingestAWSCosts();
+}
 
-  // Placeholder for GitHub ingestion
-  // Implement based on your GitHub usage patterns
-
-  return {
-    processed: 0,
-    message: 'GitHub ingestion not yet implemented',
-  };
+/**
+ * Ingest Cloudflare analytics data
+ */
+async function ingestCloudflare() {
+  const zoneId = process.env.CLOUDFLARE_ZONE_ID;
+  return await ingestCloudflareAnalytics(zoneId);
 }
