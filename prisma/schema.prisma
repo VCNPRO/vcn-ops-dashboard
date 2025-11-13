@@ -18,7 +18,7 @@ model App {
   name             String
   domain           String?
   repoUrl          String?      @map("repo_url")
-  vercelProjectId  String?      @map("vercel_project_id")
+  vercelProjectId  String?      @unique @map("vercel_project_id")
   rawBilling       RawBilling[]
   dailyCosts       DailyCost[]
 
