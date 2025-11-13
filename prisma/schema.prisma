@@ -26,11 +26,12 @@ model App {
 }
 
 model Provider {
-  id         Int          @id @default(autoincrement())
-  name       String
-  type       String?
-  rawBilling RawBilling[]
-  dailyCosts DailyCost[]
+  id           Int           @id @default(autoincrement())
+  name         String
+  type         String?
+  rawBilling   RawBilling[]
+  dailyCosts   DailyCost[]
+  pricingRates PricingRate[]
 
   @@map("providers")
 }
@@ -61,4 +62,20 @@ model DailyCost {
 
   @@unique([appId, date, providerId])
   @@map("daily_costs")
+}
+
+model PricingRate {
+  id            Int       @id @default(autoincrement())
+  providerId    Int       @map("provider_id")
+  resourceType  String    @map("resource_type")
+  unitPrice     Decimal   @map("unit_price")
+  currency      String    @default("USD")
+  unit          String?
+  effectiveDate DateTime  @default(now()) @map("effective_date")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  provider      Provider  @relation(fields: [providerId], references: [id])
+
+  @@unique([providerId, resourceType, effectiveDate])
+  @@map("pricing_rates")
 }

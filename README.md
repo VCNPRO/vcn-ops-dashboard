@@ -124,6 +124,19 @@ vcn-ops-dashboard/
 - `POST /api/sync/vercel` con body `{ "action": "projects" }` - Sincronizar proyectos
 - `POST /api/sync/vercel` con body `{ "action": "usage" }` - Sincronizar uso
 
+### Pricing Rates (Precios Unitarios)
+
+- `GET /api/pricing-rates` - Obtener todos los precios
+- `GET /api/pricing-rates?providerId=1` - Filtrar por proveedor
+- `POST /api/pricing-rates` - Crear un precio
+- `PUT /api/pricing-rates` - Actualizar un precio
+- `DELETE /api/pricing-rates?id=1` - Eliminar un precio
+- `POST /api/pricing-rates/bulk-import` - Importar precios en bulk
+
+### Cálculo de Costos
+
+- `POST /api/calculate-costs` - Calcular costos desde datos de uso
+
 ## Uso
 
 ### Sincronizar proyectos de Vercel
@@ -133,6 +146,46 @@ curl -X POST http://localhost:3000/api/sync/vercel \
   -H "Content-Type: application/json" \
   -d '{"action":"projects"}'
 ```
+
+### Importar precios unitarios
+
+```bash
+curl -X POST http://localhost:3000/api/pricing-rates/bulk-import \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rates": {
+      "vercel": {
+        "serverless_invocation": 0.000016,
+        "bandwidth_gb": 0.09
+      },
+      "twilio": {
+        "sms_sent": 0.0075
+      }
+    }
+  }'
+```
+
+### Calcular costos desde uso
+
+```bash
+curl -X POST http://localhost:3000/api/calculate-costs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "appId": 1,
+    "providerId": 2,
+    "date": "2025-01-15",
+    "usage": {
+      "serverless_invocation": 1000000,
+      "bandwidth_gb": 50.5
+    }
+  }'
+```
+
+Este endpoint:
+1. Busca los precios unitarios configurados para el proveedor
+2. Calcula el costo: `uso × precio_unitario`
+3. Guarda el resultado en `daily_costs`
+4. Retorna el desglose de costos
 
 ### Agregar datos de prueba
 
