@@ -1,0 +1,56 @@
+name: Poll Usage Data
+
+on:
+  # Run every 15 minutes
+  schedule:
+    - cron: "*/15 * * * *"
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Comma-separated list of targets (vercel,github,twilio)'
+        required: false
+        default: 'vercel'
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Poll usage data
+        run: |
+          TARGETS="${{ github.event.inputs.targets || 'vercel,github' }}"
+
+          # Convert comma-separated string to JSON array
+          TARGETS_JSON=$(echo "$TARGETS" | jq -R 'split(",") | map(select(length > 0))')
+
+          echo "Polling targets: $TARGETS_JSON"
+
+          RESPONSE=$(curl -X POST "${{ secrets.DASHBOARD_URL }}/api/ingest" \
+            -H "Authorization: Bearer ${{ secrets.INGEST_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"targets\": $TARGETS_JSON}" \
+            -w "\n%{http_code}" \
+            -s)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Error: API returned status $HTTP_CODE"
+            echo "$BODY" | jq '.' || echo "$BODY"
+            exit 1
+          fi
+
+          echo "✅ Successfully ingested data"
+          echo "$BODY" | jq '.'
+
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "Failed to poll usage data. Check logs for details."
+          # Add notification logic here (email, Slack, etc.)

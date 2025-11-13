@@ -71,26 +71,40 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
 ```
 vcn-ops-dashboard/
+├── .github/
+│   └── workflows/
+│       ├── poll-usage.yml     # Polling cada 15 minutos
+│       └── daily-ingest.yml   # Ingesta diaria automática
 ├── app/
 │   ├── api/
 │   │   ├── apps/              # CRUD de aplicaciones
 │   │   ├── providers/         # CRUD de proveedores
 │   │   ├── daily-costs/       # CRUD de costos diarios
 │   │   ├── raw-billing/       # CRUD de facturación cruda
+│   │   ├── pricing-rates/     # CRUD de precios unitarios
+│   │   │   └── bulk-import/   # Importación masiva de precios
+│   │   ├── calculate-costs/   # Cálculo automático de costos
+│   │   ├── ingest/            # Ingesta automática de datos
 │   │   ├── vercel/
 │   │   │   ├── projects/      # Obtener proyectos de Vercel
 │   │   │   ├── usage/         # Obtener uso de Vercel
 │   │   │   └── deployments/   # Obtener deployments de Vercel
 │   │   └── sync/
 │   │       └── vercel/        # Sincronizar datos de Vercel
+│   ├── pricing/
+│   │   └── page.tsx           # Página de gestión de precios
 │   └── page.tsx               # Página principal del dashboard
 ├── components/
 │   ├── DashboardClient.tsx    # Componente principal del dashboard
 │   ├── CostChart.tsx          # Gráfico de costos
-│   └── AppsList.tsx           # Lista de aplicaciones
+│   ├── AppsList.tsx           # Lista de aplicaciones
+│   ├── PricingRates.tsx       # Gestión de precios
+│   └── Navigation.tsx         # Navegación del sitio
 ├── lib/
 │   ├── prisma.ts              # Cliente singleton de Prisma
-│   └── vercel-sync.ts         # Utilidades de sincronización
+│   ├── vercel-sync.ts         # Utilidades de sincronización Vercel
+│   ├── ingest-vercel.ts       # Ingesta automática de Vercel
+│   └── cost-calculator.ts     # Calculadora de costos
 ├── prisma/
 │   └── schema.prisma          # Esquema de la base de datos
 └── .env.example               # Ejemplo de variables de entorno
@@ -136,6 +150,10 @@ vcn-ops-dashboard/
 ### Cálculo de Costos
 
 - `POST /api/calculate-costs` - Calcular costos desde datos de uso
+
+### Ingesta Automática
+
+- `POST /api/ingest` - Ingerir datos de múltiples proveedores (requiere autenticación Bearer token)
 
 ## Uso
 
@@ -186,6 +204,42 @@ Este endpoint:
 2. Calcula el costo: `uso × precio_unitario`
 3. Guarda el resultado en `daily_costs`
 4. Retorna el desglose de costos
+
+### Ingesta automática de datos
+
+El endpoint `/api/ingest` permite recopilar datos de uso de múltiples proveedores automáticamente:
+
+```bash
+curl -X POST https://your-dashboard.com/api/ingest \
+  -H "Authorization: Bearer your_ingest_token" \
+  -H "Content-Type: application/json" \
+  -d '{"targets": ["vercel", "github", "twilio"]}'
+```
+
+#### Configurar GitHub Actions para polling automático
+
+1. Configura los secrets en tu repositorio:
+   - `DASHBOARD_URL`: URL de tu dashboard (ej: `https://vcn-ops.example.com`)
+   - `INGEST_TOKEN`: Token de autenticación para el endpoint
+
+2. Los workflows incluidos:
+   - **poll-usage.yml**: Ejecuta cada 15 minutos (personalizable)
+   - **daily-ingest.yml**: Ejecuta diariamente a la 1 AM UTC
+
+3. Para ejecutar manualmente:
+   - Ve a Actions → Poll Usage Data → Run workflow
+   - Especifica los targets (separados por coma): `vercel,github,twilio`
+
+#### Cómo funciona la ingesta
+
+1. El workflow de GitHub Actions llama al endpoint `/api/ingest`
+2. El endpoint autentica la solicitud con el token
+3. Para cada provider en `targets`:
+   - Obtiene datos de uso del día anterior
+   - Almacena datos crudos en `raw_billing`
+   - Busca los precios unitarios configurados
+   - Calcula costos automáticamente
+   - Guarda en `daily_costs` con desglose detallado
 
 ### Agregar datos de prueba
 
