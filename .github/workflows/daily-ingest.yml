@@ -1,65 +1,17 @@
-name: Daily Usage Ingest
+name: daily-ingest
 
 on:
-  # Run daily at 1 AM UTC
   schedule:
     - cron: "0 1 * * *"
-
-  # Allow manual trigger
   workflow_dispatch:
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Ingest yesterday's usage data
+      - name: Call ingest endpoint
         run: |
-          echo "Starting daily usage ingestion..."
-
-          RESPONSE=$(curl -X POST "${{ secrets.DASHBOARD_URL }}/api/ingest" \
+          curl -X POST "${{ secrets.DASHBOARD_URL }}/api/ingest" \
             -H "Authorization: Bearer ${{ secrets.INGEST_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"targets": ["vercel", "github", "twilio"]}' \
-            -w "\n%{http_code}" \
-            -s)
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-
-          echo "HTTP Status: $HTTP_CODE"
-
-          if [ "$HTTP_CODE" -ne 200 ]; then
-            echo "❌ Ingestion failed with status $HTTP_CODE"
-            echo "$BODY" | jq '.' 2>/dev/null || echo "$BODY"
-            exit 1
-          fi
-
-          echo "✅ Daily ingestion completed successfully"
-          echo "$BODY" | jq '.'
-
-          # Extract metrics
-          INGESTED=$(echo "$BODY" | jq '.ingested | length')
-          ERRORS=$(echo "$BODY" | jq '.errors | length')
-
-          echo "📊 Summary:"
-          echo "  - Providers processed: $INGESTED"
-          echo "  - Errors: $ERRORS"
-
-          if [ "$ERRORS" -gt 0 ]; then
-            echo "⚠️  Some providers had errors:"
-            echo "$BODY" | jq '.errors'
-          fi
-
-      - name: Create issue on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🚨 Daily Usage Ingest Failed',
-              body: 'The daily usage ingestion workflow failed. Please check the logs.',
-              labels: ['bug', 'automated']
-            })
+            -d '{"targets":["vercel","github","twilio"]}'
