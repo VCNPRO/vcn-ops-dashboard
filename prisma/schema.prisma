@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model App {
+  id               Int          @id @default(autoincrement())
+  name             String
+  domain           String?
+  repoUrl          String?      @map("repo_url")
+  vercelProjectId  String?      @map("vercel_project_id")
+  rawBilling       RawBilling[]
+  dailyCosts       DailyCost[]
+
+  @@map("apps")
+}
+
+model Provider {
+  id         Int          @id @default(autoincrement())
+  name       String
+  type       String?
+  rawBilling RawBilling[]
+  dailyCosts DailyCost[]
+
+  @@map("providers")
+}
+
+model RawBilling {
+  id         Int       @id @default(autoincrement())
+  providerId Int?      @map("provider_id")
+  appId      Int?      @map("app_id")
+  raw        Json?
+  fetchedAt  DateTime  @default(now()) @map("fetched_at")
+  provider   Provider? @relation(fields: [providerId], references: [id])
+  app        App?      @relation(fields: [appId], references: [id])
+
+  @@map("raw_billing")
+}
+
+model DailyCost {
+  id         Int       @id @default(autoincrement())
+  appId      Int?      @map("app_id")
+  date       DateTime  @db.Date
+  providerId Int?      @map("provider_id")
+  costLocal  Decimal?  @map("cost_local")
+  currency   String?
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  app        App?      @relation(fields: [appId], references: [id])
+  provider   Provider? @relation(fields: [providerId], references: [id])
+
+  @@unique([appId, date, providerId])
+  @@map("daily_costs")
+}
