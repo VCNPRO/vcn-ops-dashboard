@@ -105,7 +105,7 @@ export async function ingestAllVercelApps() {
             date: startDate.toISOString().split('T')[0],
             usage,
             source: 'vercel-api',
-          },
+          } as any,
         },
       });
 
@@ -175,7 +175,7 @@ export async function ingestVercelUsageManual(
         date: date.toISOString().split('T')[0],
         usage,
         source: 'manual',
-      },
+      } as any,
     },
   });
 
